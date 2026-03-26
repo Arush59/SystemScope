@@ -42,4 +42,20 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
+// Delete a design permanently from MongoDB Cloud
+router.delete('/:id', requireAuth, async (req, res) => {
+  try {
+    const design = await Design.findOneAndDelete({ 
+      _id: req.params.id, 
+      userId: req.user.id 
+    });
+    
+    if (!design) return res.status(404).json({ error: 'Design not found or unauthorized' });
+    
+    res.json({ message: 'Design scrubbed successfully' });
+  } catch(err) {
+    res.status(500).json({ error: 'Failed to delete design' });
+  }
+});
+
 module.exports = router;

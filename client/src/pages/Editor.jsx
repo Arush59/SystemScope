@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Canvas from '../components/Canvas/Canvas';
 import Sidebar from '../components/Sidebar/Sidebar';
 import ConfigPanel from '../components/ConfigPanel/ConfigPanel';
 import MetricsDashboard from '../components/Dashboard/MetricsDashboard';
 import useStore from '../store/useStore';
-import { Play, Save, Image as ImageIcon, User, LogOut, HelpCircle, Loader2 } from 'lucide-react';
+import { Play, Save, Image as ImageIcon, User, LogOut, HelpCircle, Loader2, FolderOpen, Download } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import GuidedTour from '../components/GuidedTour/GuidedTour';
+import LoadModal from '../components/LoadModal/LoadModal';
 
 const Editor = () => {
   const { isSimulating, setIsSimulating, nodes, edges, setSimulationResults, user, token, logout, setIsTourOpen } = useStore();
   const [panelOpen, setPanelOpen] = useState(false);
   const [rpsInput, setRpsInput] = useState(500);
+  const [isLoadModalOpen, setLoadModalOpen] = useState(false);
 
   const runSimulation = async () => {
     setIsSimulating(true);
@@ -81,9 +83,29 @@ const Editor = () => {
     }
   };
 
+  const handleExportJson = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ nodes, edges }, null, 2));
+    const link = document.createElement('a');
+    link.download = 'system-architecture.json';
+    link.href = dataStr;
+    link.click();
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [user, token, nodes, edges]);
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-slate-900 font-sans text-slate-100">
       <GuidedTour />
+      <LoadModal isOpen={isLoadModalOpen} onClose={() => setLoadModalOpen(false)} />
       <Sidebar />
 
       <div className="flex-1 flex flex-col relative h-full">
@@ -93,11 +115,18 @@ const Editor = () => {
               SystemScope
             </div>
             <div className="h-4 w-px bg-slate-600"></div>
-            <button onClick={handleExportPng} className="text-slate-400 hover:text-white flex items-center gap-1.5 text-sm font-medium transition-colors">
+            <button onClick={handleExportPng} className="text-slate-400 hover:text-white flex items-center gap-1.5 text-sm font-medium transition-colors" title="Export as Image">
               <ImageIcon size={14}/> Export PNG
             </button>
-            <button onClick={handleSave} className="text-slate-400 hover:text-white flex items-center gap-1.5 text-sm font-medium transition-colors">
+            <button onClick={handleExportJson} className="text-slate-400 hover:text-white flex items-center gap-1.5 text-sm font-medium transition-colors" title="Export as Object Data">
+              <Download size={14}/> Export JSON
+            </button>
+            <div className="h-4 w-px bg-slate-700/50"></div>
+            <button onClick={handleSave} className="text-slate-400 hover:text-white flex items-center gap-1.5 text-sm font-medium transition-colors" title="Ctrl+S">
               <Save size={14}/> Save Design
+            </button>
+            <button onClick={() => setLoadModalOpen(true)} className="text-slate-400 hover:text-white flex items-center gap-1.5 text-sm font-medium transition-colors">
+              <FolderOpen size={14}/> Load Design
             </button>
             <button onClick={() => setIsTourOpen(true)} className="text-slate-400 hover:text-white flex items-center gap-1.5 text-sm font-medium transition-colors">
               <HelpCircle size={14}/> Tour
